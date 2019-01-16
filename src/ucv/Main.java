@@ -81,16 +81,18 @@ public class Main {
                                 String rank = tokens[13];
                                 String stat = tokens[17];
                                 
+                                // create student (or get if already exists)
                                 Student stud;
                                 if(studMap.containsKey(ssan)) {
                                     // get existing student
                                     stud = studMap.get(ssan);
                                 } else {
                                     // create new student
-                                    stud = new Student(name, ssan, trqi, rank, stat);
+                                    stud = new Student(name, ssan, trqi, rank);
                                     // add student to map
                                     studMap.put(ssan, stud);
                                 }
+                                
                                 // point student to UCT class
                                 UCTClass c = classMap.get(clas);
                                 if(clas.contains("OQR")) {
@@ -98,14 +100,17 @@ public class Main {
                                         stud.setPhase1(classMap.get("unassigned"));
                                     } else {
                                         stud.setPhase1(c);
+                                        stud.setStat1(stat);
                                     }
                                 } else {
                                     if(c == null) {
                                         stud.setPhase2(classMap.get("unassigned"));
                                     } else {
                                         stud.setPhase2(c);
+                                        stud.setStat2(stat);
                                     }
                                 }
+                                
                                 // add student to class
                                 if(c == null) {
                                     classMap.get("unassigned").addStudent(stud);
@@ -157,25 +162,22 @@ public class Main {
                     bw.write(c1 + "/" + c2 + uc + "\n");
                     for(Student s : uc.students()) {
                         if(s.classStatus() == PHASE1_ONLY) {
-                            bw.write(",X,," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
+                            bw.write("," + s.getRel1() + "," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                         }
                     }
                     for(Student s : uc.students()) {
                         if(s.classStatus() == BOTH_SAME) {
-                            bw.write(",X,X," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
+                            bw.write("," + s.getRel1() + "," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                         }
                     }
                     for(Student s : uc.students()) {
                         if(s.classStatus() == PHASE2_ONLY) {
-                            bw.write(",,X," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
+                            bw.write("," + s.getRel1() + "," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                         }
                     }
                     for(Student s : uc.students()) {
                         if(s.classStatus() == BOTH_DIFF) {
-                            if(s.p1.equals(uc))
-                                bw.write(",O,," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
-                            else
-                                bw.write(",,O," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
+                            bw.write("," + s.getRel1() + "," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                         }
                     }
                     bw.write("\n");
@@ -185,19 +187,6 @@ public class Main {
         
             bw.close();
         } catch(IOException ex) { }
-    }
-    
-    public static String getClassStatus(int stat) {
-        switch(stat) {
-            case PHASE1_ONLY:
-                return "P1";
-            case PHASE2_ONLY:
-                return "P2";
-            case BOTH_SAME:
-                return "BS";
-            default:
-                return "BD";
-        }
     }
     
     public static class UCTClass {
@@ -243,16 +232,18 @@ public class Main {
     }
     
     public static class Student {
-        final String name, ssan, trqi, rank, stat;
+        final String name, ssan, trqi, rank;
+        String stat1, stat2;
         UCTClass p1, p2;
         
         
-        public Student(String name, String ssan, String trqi, String rank, String stat) {
+        public Student(String name, String ssan, String trqi, String rank) {
             this.name = name;
             this.ssan = ssan;
             this.trqi = trqi;
             this.rank = rank;
-            this.stat = stat;
+            this.stat1 = "";
+            this.stat2 = "";
             p1 = null;
             p2 = null;
         }
@@ -263,6 +254,14 @@ public class Main {
         
         public void setPhase2(UCTClass p2) {
             this.p2 = p2;
+        }
+        
+        public void setStat1(String stat1) {
+            this.stat1 = stat1;
+        }
+        
+        public void setStat2(String stat2) {
+            this.stat2 = stat2;
         }
         
         public int classStatus() {
@@ -281,8 +280,40 @@ public class Main {
             return ssan;
         }
         
-        public String getStat() {
-            return stat;
+        public String getStat1() {
+            return stat1;
+        }
+        
+        public String getStat2() {
+            return stat2;
+        }
+        
+        public String getRel1() {
+            if(p2 == null) {
+                return "X";
+            } else if(p1 == null) {
+                return "";
+            } else if(p1.equals(p2)) {
+                return "X";
+            } else {
+                int r1 = Integer.parseInt(p1.p1.substring(15));
+                int r2 = Integer.parseInt(p2.p1.substring(15));
+                return Integer.toString(r2-r1);
+            }
+        }
+        
+        public String getRel2() {
+            if(p2 == null) {
+                return "";
+            } else if(p1 == null) {
+                return "X";
+            } else if(p1.equals(p2)) {
+                return "X";
+            } else {
+                int r1 = Integer.parseInt(p1.p2.substring(15));
+                int r2 = Integer.parseInt(p2.p2.substring(15));
+                return Integer.toString(r2-r1);
+            }
         }
         
         public String getName() {
@@ -299,7 +330,7 @@ public class Main {
         
         @Override
         public String toString() {
-            return ssan + " | " + trqi + " | " + rank + " | " + stat + " | " + name + " | " + p1 + " | " + p2;
+            return ssan + " | " + trqi + " | " + rank + " | " + name + " | " + p1 + " | " + stat1 + " | " + p2 + " | " + stat2;
         }
     }
 }
