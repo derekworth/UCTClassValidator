@@ -177,7 +177,11 @@ public class Main {
                     }
                     for(Student s : uc.students()) {
                         if(s.classStatus() == BOTH_DIFF) {
-                            bw.write("," + s.getRel1() + "," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
+                            if(uc.equals(s.p1)) {
+                                bw.write("," + s.getRel1() + ",," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
+                            } else {
+                                bw.write(",," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
+                            }
                         }
                     }
                     bw.write("\n");
@@ -296,9 +300,13 @@ public class Main {
             } else if(p1.equals(p2)) {
                 return "X";
             } else {
-                int r1 = Integer.parseInt(p1.p1.substring(15));
-                int r2 = Integer.parseInt(p2.p1.substring(15));
-                return Integer.toString(r2-r1);
+                try {
+                    int r1 = Integer.parseInt(p1.p1.substring(15));
+                    int r2 = Integer.parseInt(p2.p1.substring(15));
+                    return Integer.toString(r2 - r1);
+                } catch (Exception e) {
+                    return "U";
+                }
             }
         }
         
@@ -310,9 +318,13 @@ public class Main {
             } else if(p1.equals(p2)) {
                 return "X";
             } else {
-                int r1 = Integer.parseInt(p1.p2.substring(15));
-                int r2 = Integer.parseInt(p2.p2.substring(15));
-                return Integer.toString(r2-r1);
+                try {
+                    int r1 = Integer.parseInt(p1.p2.substring(15));
+                    int r2 = Integer.parseInt(p2.p2.substring(15));
+                    return Integer.toString(r1-r2);
+                } catch(Exception e) {
+                    return "U";
+                }
             }
         }
         
