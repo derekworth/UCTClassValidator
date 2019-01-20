@@ -81,6 +81,17 @@ public class Main {
                                 String rank = tokens[13];
                                 String stat = tokens[17];
                                 
+                                // rename file
+                                if(!f.getName().contains(clas)) {
+                                    File tmp = new File(clas + ".csv");
+                                    int count = 0;
+                                    while(tmp.exists()) {
+                                        count++;
+                                        tmp = new File(clas + " (" + count + ").csv");
+                                    }
+                                    f.renameTo(tmp);
+                                }
+                                
                                 // create student (or get if already exists)
                                 Student stud;
                                 if(studMap.containsKey(ssan)) {
