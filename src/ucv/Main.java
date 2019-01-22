@@ -24,7 +24,10 @@ public class Main {
     static final int PHASE2_ONLY = 1;
     static final int BOTH_SAME   = 2;
     static final int BOTH_DIFF   = 3;
-
+    static final String RESULTS_FILE = "Summary.csv";
+    static final String ENTRIES_FILE = "StudentEntries.csv";
+    static final String CLASSES_FILE = "Classes.csv";
+    
     public static void main(String[] args) {
         LinkedList<UCTClass> classList = new LinkedList();
         // Track all classes and students
@@ -32,7 +35,7 @@ public class Main {
         HashMap<String, Student>  studMap = new HashMap();
         
         // populate classes
-        File cFile = new File("Classes.csv");
+        File cFile = new File(CLASSES_FILE);
         try {
             FileReader fr = new FileReader(cFile);
             try (BufferedReader br = new BufferedReader(fr)) {
@@ -61,82 +64,94 @@ public class Main {
             } 
         } catch(IOException e) { /*DO NOTHING*/ }
         
-        // populate students
-        File folder = new File(".");
-        File[] files = folder.listFiles();
-        for(File f : files) {
-            if(f.getName().contains(".csv")) {
-                try {
-                    FileReader fr = new FileReader(f);
-                    try (BufferedReader br = new BufferedReader(fr)) {
-                        String line = br.readLine();
-                        String[] tokens = line.split(",");
-                        if(tokens.length == 25 && tokens[2].equalsIgnoreCase("\"PDSCLASS\"") && tokens[9].equalsIgnoreCase("\"CMPL_DTE\"")) {
-                            while((line = br.readLine()) != null) {
-                                tokens = line.split("\"");
-                                String name = tokens[1];
-                                String ssan = tokens[3];
-                                String clas = tokens[5];
-                                String trqi = tokens[7];
-                                String rank = tokens[13];
-                                String stat = tokens[17];
-                                
-                                // rename file
-                                if(!f.getName().contains(clas)) {
-                                    File tmp = new File(clas + ".csv");
-                                    int count = 0;
-                                    while(tmp.exists()) {
-                                        count++;
-                                        tmp = new File(clas + " (" + count + ").csv");
-                                    }
-                                    f.renameTo(tmp);
-                                }
-                                
-                                // create student (or get if already exists)
-                                Student stud;
-                                if(studMap.containsKey(ssan)) {
-                                    // get existing student
-                                    stud = studMap.get(ssan);
-                                } else {
-                                    // create new student
-                                    stud = new Student(name, ssan, trqi, rank);
-                                    // add student to map
-                                    studMap.put(ssan, stud);
-                                }
-                                
-                                // point student to UCT class
-                                UCTClass c = classMap.get(clas);
-                                if(clas.contains("OQR")) {
-                                    if(c == null) {
-                                        stud.setPhase1(classMap.get("unassigned"));
-                                    } else {
-                                        stud.setPhase1(c);
-                                        stud.setStat1(stat);
-                                    }
-                                } else {
-                                    if(c == null) {
-                                        stud.setPhase2(classMap.get("unassigned"));
-                                    } else {
-                                        stud.setPhase2(c);
-                                        stud.setStat2(stat);
-                                    }
-                                }
-                                
-                                // add student to class
-                                if(c == null) {
-                                    classMap.get("unassigned").addStudent(stud);
-                                } else {
-                                    c.addStudent(stud);
+        // populate student entries
+        try {
+            FileWriter fw = new FileWriter(ENTRIES_FILE);
+            BufferedWriter bw = new BufferedWriter(fw);
+            bw.write("\"NAME\",\"SSAN\",\"PDSCLASS\",\"TRQI\",\"TLN\",\"T\",\"GR\",\"SHIFT\",\"STAT\",\"CMPL_DTE\",\"CUR_SQ\",\"DOMAIN\",\"X\",\"SC\",\"A\",\"E\",\"G\",\"M\",\"AFQT\",\"GTEP\",\"FG\",\"ED\",\"TG\",\"DG\",\"GPAS\"\n");
+            File folder = new File(".");
+            File[] files = folder.listFiles();
+            for(File f : files) {
+                if(f.getName().contains(".csv") && !f.getName().contains("StudentEntries")&& !f.getName().contains("Classes")) {
+                    try {
+                        FileReader fr = new FileReader(f);
+                        try (BufferedReader br = new BufferedReader(fr)) {
+                            String line = br.readLine();
+                            String[] tokens = line.split(",");
+                            if(tokens.length == 25 && tokens[2].equalsIgnoreCase("\"PDSCLASS\"") && tokens[9].equalsIgnoreCase("\"CMPL_DTE\"")) {
+                                while((line = br.readLine()) != null) {
+                                    bw.write(line + "\n");
                                 }
                             }
                         }
-                    }
-                } catch(IOException e) { /*DO NOTHING*/ }
+                    } catch(IOException e) { /*DO NOTHING*/ }
+                    
+                    // delete the file
+                    f.delete();
+                }
             }
-        }
-
+        } catch(IOException ex) { /*DO NOTHING*/ }
+        
+        // populate students
         try {
-            FileWriter fw = new FileWriter("Summary.csv");
+            FileReader fr = new FileReader(new File(ENTRIES_FILE));
+            try (BufferedReader br = new BufferedReader(fr)) {
+                String line = br.readLine();
+                String[] tokens = line.split(",");
+                if(tokens.length == 25 && tokens[2].equalsIgnoreCase("\"PDSCLASS\"") && tokens[9].equalsIgnoreCase("\"CMPL_DTE\"")) {
+                    while((line = br.readLine()) != null) {
+                        tokens = line.split("\"");
+                        String name = tokens[1];
+                        String ssan = tokens[3];
+                        String clas = tokens[5];
+                        String trqi = tokens[7];
+                        String rank = tokens[13];
+                        String stat = tokens[17];
+
+                        // create student (or get if already exists)
+                        Student stud;
+                        if(studMap.containsKey(ssan)) {
+                            // get existing student
+                            stud = studMap.get(ssan);
+                        } else {
+                            // create new student
+                            stud = new Student(name, ssan, trqi, rank);
+                            // add student to map
+                            studMap.put(ssan, stud);
+                        }
+
+                        // point student to UCT class
+                        UCTClass c = classMap.get(clas);
+                        if(clas.contains("OQR")) {
+                            if(c == null) {
+                                stud.setPhase1(classMap.get("unassigned"));
+                            } else {
+                                stud.setPhase1(c);
+                                stud.setStat1(stat);
+                            }
+                        } else {
+                            if(c == null) {
+                                stud.setPhase2(classMap.get("unassigned"));
+                            } else {
+                                stud.setPhase2(c);
+                                stud.setStat2(stat);
+                            }
+                        }
+
+                        // add student to class
+                        if(c == null) {
+                            classMap.get("unassigned").addStudent(stud);
+                        } else {
+                            c.addStudent(stud);
+                        }
+                    }
+                }
+            }
+        } catch(IOException e) { /*DO NOTHING*/ }
+
+        // populate final results
+        try {
+            FileWriter fw = new FileWriter(RESULTS_FILE);
             BufferedWriter bw = new BufferedWriter(fw);
             
             // print students to file
