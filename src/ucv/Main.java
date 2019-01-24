@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package ucv;
 
 import java.io.BufferedReader;
@@ -27,7 +22,7 @@ public class Main {
     static final String RESULTS_FILE = "Summary.csv";
     static final String ENTRIES_FILE = "StudentEntries.csv";
     static final String CLASSES_FILE = "Classes.csv";
-    
+
     public static void main(String[] args) {
         LinkedList<UCTClass> classList = new LinkedList();
         // Track all classes and students
@@ -42,9 +37,11 @@ public class Main {
                 String line = br.readLine();
                 String[] tokens = line.split(",");
                 if(tokens.length == 7 && tokens[0].contains("Class Number") && tokens[4].contains("Class Number")) {
+                    System.out.println("Loading classes...");
                     UCTClass c = new UCTClass("unassigned","--","--","unassigned","--","--");
                     classList.add(c);
                     classMap.put("unassigned", c);
+                    System.out.println("-unassigned added");
                     while((line = br.readLine()) != null) {
                         tokens = line.split(",");
                         String p1      = tokens[0];
@@ -59,10 +56,14 @@ public class Main {
                         classList.add(c);
                         classMap.put(p1, c);
                         classMap.put(p2, c);
+                        System.out.println("-" + p1 + " | " + p2 + " added");
                     }
                 }
             } 
-        } catch(IOException e) { /*DO NOTHING*/ }
+        } catch(IOException e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+        }
         
         // populate student entries
         try {
@@ -72,9 +73,8 @@ public class Main {
             File folder = new File(".");
             File[] files = folder.listFiles();
             for(File f : files) {
-                if(f.getName().contains(".csv") && !f.getName().contains("StudentEntries")&& !f.getName().contains("Classes")) {
-                    try {
-                        FileReader fr = new FileReader(f);
+                if(f.getName().contains(".csv") && !f.getName().equals(ENTRIES_FILE)&& !f.getName().equals(CLASSES_FILE)) {
+                    try (FileReader fr = new FileReader(f)) {
                         try (BufferedReader br = new BufferedReader(fr)) {
                             String line = br.readLine();
                             String[] tokens = line.split(",");
@@ -82,15 +82,27 @@ public class Main {
                                 while((line = br.readLine()) != null) {
                                     bw.write(line + "\n");
                                 }
+                                System.out.println("-File(" + f.getName() + ") dumped to " + ENTRIES_FILE);
                             }
+                        } catch(Exception e) {
+                            System.out.println(e.getMessage());
+                            System.exit(0);
                         }
-                    } catch(IOException e) { /*DO NOTHING*/ }
+                    } catch(IOException e) {
+                        System.out.println(e.getMessage());
+                        System.exit(0);
+                    }
                     
-                    // delete the file
+                    // delete the file after dumped
                     f.delete();
                 }
             }
-        } catch(IOException ex) { /*DO NOTHING*/ }
+            bw.close();
+            fw.close();
+        } catch(IOException ex) {
+            System.out.println(ex.getMessage());
+            System.exit(0);
+        }
         
         // populate students
         try {
@@ -99,6 +111,7 @@ public class Main {
                 String line = br.readLine();
                 String[] tokens = line.split(",");
                 if(tokens.length == 25 && tokens[2].equalsIgnoreCase("\"PDSCLASS\"") && tokens[9].equalsIgnoreCase("\"CMPL_DTE\"")) {
+                    System.out.println("-reading " + ENTRIES_FILE + "...");
                     while((line = br.readLine()) != null) {
                         tokens = line.split("\"");
                         String name = tokens[1];
@@ -146,8 +159,13 @@ public class Main {
                         }
                     }
                 }
+                br.close();
             }
-        } catch(IOException e) { /*DO NOTHING*/ }
+            fr.close();
+        } catch(IOException e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+        }
 
         // populate final results
         try {
@@ -159,6 +177,8 @@ public class Main {
                 if(uc.size()>0) {
                     int c1 = 0;
                     int c2 = 0;
+                    
+                    // get count for each class/phase
                     for(Student s : uc.students()) {
                         if(s.classStatus() == PHASE1_ONLY) {
                             c1++;
@@ -184,28 +204,33 @@ public class Main {
                         }
                     }
 
-
+                    // write to file
                     bw.write(c1 + "/" + c2 + uc + "\n");
                     for(Student s : uc.students()) {
                         if(s.classStatus() == PHASE1_ONLY) {
+                            System.out.println("," + s.getRel1() + "," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                             bw.write("," + s.getRel1() + "," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                         }
                     }
                     for(Student s : uc.students()) {
                         if(s.classStatus() == BOTH_SAME) {
+                            System.out.println("," + s.getRel1() + "," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                             bw.write("," + s.getRel1() + "," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                         }
                     }
                     for(Student s : uc.students()) {
                         if(s.classStatus() == PHASE2_ONLY) {
+                            System.out.println("," + s.getRel1() + "," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                             bw.write("," + s.getRel1() + "," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                         }
                     }
                     for(Student s : uc.students()) {
                         if(s.classStatus() == BOTH_DIFF) {
                             if(uc.equals(s.p1)) {
+                                System.out.println("," + s.getRel1() + ",," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                                 bw.write("," + s.getRel1() + ",," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                             } else {
+                                System.out.println(",," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                                 bw.write(",," + s.getRel2() + "," + s.getSSAN() + "," + s.getTRQI() + "," + s.getStat1() + "," + s.getStat2() + "," + s.getRank() + ",\"" + s.getName() + "\"\n");
                             }
                         }
@@ -214,9 +239,12 @@ public class Main {
 
                 }
             }
-        
             bw.close();
-        } catch(IOException ex) { }
+            System.out.println("-results written to " + RESULTS_FILE);
+        } catch(IOException ex) {
+            System.out.println(ex.getMessage());
+            System.exit(0);
+        }
     }
     
     public static class UCTClass {
